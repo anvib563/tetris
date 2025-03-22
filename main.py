@@ -1,6 +1,7 @@
 import pygame
 import random
 
+#add something new
 # Settings
 width = 300
 height = 600

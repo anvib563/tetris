@@ -1,7 +1,9 @@
-import pygame
+ import pygame
 import random
 
-#add something new
+# Initialize pygame
+pygame.init()
+
 # Settings
 width = 300
 height = 600
@@ -64,20 +66,22 @@ class Piece:
                     positions.append((self.x + j, self.y + i))
         return positions
 
-
-# Initialize pygame
-pygame.init()
-
 # Functions
 def draw_piece(piece):
     """Draw the current piece on the screen."""
     for x, y in piece.get_rect():
         pygame.draw.rect(screen, piece.color, (x * block_size, y * block_size, block_size, block_size))
 
+def draw_board(board):
+    """Draw the game board."""
+    for y, row in enumerate(board):
+        for x, color in enumerate(row):
+            pygame.draw.rect(screen, color, (x * block_size, y * block_size, block_size, block_size))
+
 def check_collision(board, piece):
     """Check if the piece has collided with anything on the board."""
     for x, y in piece.get_rect():
-        if x < 0 or x >= width // block_size or y >= height // block_size or board[y][x]:
+        if x < 0 or x >= width // block_size or y >= height // block_size or board[y][x] != black:
             return True
     return False
 
@@ -90,7 +94,7 @@ def clear_lines(board):
     """Clear completed lines from the board."""
     new_board = [row for row in board if any(cell == black for cell in row)]
     lines_cleared = height // block_size - len(new_board)
-    new_board = [[black] * (width // block_size)] * lines_cleared + new_board
+    new_board = [[black] * (width // block_size) for _ in range(lines_cleared)] + new_board
     return new_board, lines_cleared
 
 # Create game board
@@ -101,10 +105,11 @@ exit = False
 clock = pygame.time.Clock()
 current_piece = Piece(random.choice(shapes), random.choice(colors))
 fall_time = 0
+fall_speed = 500  # Milliseconds between piece drops
+score = 0
 
 while not exit:
     screen.fill(black)
-    fall_speed = 500  # Milliseconds between piece drops
     
     # Handle events
     for event in pygame.event.get():
@@ -129,26 +134,25 @@ while not exit:
                     current_piece.rotate()  # Revert if collision occurs
 
     # Piece falling logic
-    fall_time += clock.get_rawtime()
-    clock.tick()
-
+    fall_time += clock.get_time()
     if fall_time > fall_speed:
         current_piece.y += 1
         if check_collision(board, current_piece):
             current_piece.y -= 1
             merge_piece(board, current_piece)
             board, lines_cleared = clear_lines(board)
+            score += lines_cleared  # Update score
             current_piece = Piece(random.choice(shapes), random.choice(colors))
+            if check_collision(board, current_piece):  # Check for game over
+                print("Game Over! Your score:", score)
+                exit = True
         fall_time = 0
 
-    # Draw the board
-    for y, row in enumerate(board):
-        for x, color in enumerate(row):
-            pygame.draw.rect(screen, color, (x * block_size, y * block_size, block_size, block_size))
-
-    # Draw the current falling piece
+    # Draw the board and the current falling piece
+    draw_board(board)
     draw_piece(current_piece)
 
     pygame.display.update()
+    clock.tick(60)  # Limit to 60 frames per second
 
 pygame.quit()
